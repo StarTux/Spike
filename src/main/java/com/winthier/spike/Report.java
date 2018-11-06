@@ -13,21 +13,25 @@ import org.bukkit.command.CommandSender;
 final class Report {
     HashMap<String, Entry> entries = new HashMap<>();
 
-    void onMissedTick(final StackTraceElement stackTraceElement) {
-        if (stackTraceElement.isNativeMethod()) {
-            return;
+    void onMissedTick(final StackTraceElement[] trace) {
+        HashSet<String> doneKeys = new HashSet<>();
+        for (StackTraceElement stackTraceElement: trace) {
+            if (stackTraceElement.isNativeMethod()) continue;
+            final String key = stackTraceElement.getClassName();
+            Entry entry = this.entries.get(key);
+            if (entry == null) {
+                entry = new Entry(stackTraceElement);
+                this.entries.put(key, entry);
+            }
+            entry.methodNames.add(stackTraceElement.getMethodName());
+            if (stackTraceElement.getLineNumber() >= 0) {
+                entry.lineNumbers.add(stackTraceElement.getLineNumber());
+            }
+            if (!doneKeys.contains(key)) {
+                entry.count += 1;
+                doneKeys.add(key);
+            }
         }
-        final String key = stackTraceElement.getClassName();
-        Entry entry = this.entries.get(key);
-        if (entry == null) {
-            entry = new Entry(stackTraceElement);
-            this.entries.put(key, entry);
-        }
-        entry.methodNames.add(stackTraceElement.getMethodName());
-        if (stackTraceElement.getLineNumber() >= 0) {
-            entry.lineNumbers.add(stackTraceElement.getLineNumber());
-        }
-        entry.count += 1;
     }
 
     void reset() {

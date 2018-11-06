@@ -114,10 +114,9 @@ final class WatchTask implements Runnable {
             // If a tick was missed, add this info to the short and
             // full report.
             this.missedTicks += 1;
-            for (final StackTraceElement stackTraceElement: this.mainThread.getStackTrace()) {
-                this.fullReport.onMissedTick(stackTraceElement);
-                this.shortReport.onMissedTick(stackTraceElement);
-            }
+            final StackTraceElement[] trace = this.mainThread.getStackTrace();
+            this.fullReport.onMissedTick(trace);
+            this.shortReport.onMissedTick(trace);
         }
     }
 }
