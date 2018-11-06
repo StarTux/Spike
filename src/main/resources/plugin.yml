@@ -10,8 +10,10 @@ commands:
   spike:
     description: Admin interface
     permission: spike.spike
+    usage: |-
+      /spike reload - Reload configuration
+      /spike generate [ticks] - Generate a lag spike
 permissions:
   spike.spike:
     description: Use /spike
     default: op
-  
