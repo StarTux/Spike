@@ -25,7 +25,7 @@ public final class SpikePlugin extends JavaPlugin {
         this.watchTask.stop();
     }
 
-    // --- Util
+    // --- Config
 
     private void importConfig() {
         reloadConfig();

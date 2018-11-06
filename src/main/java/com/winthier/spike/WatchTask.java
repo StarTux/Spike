@@ -35,6 +35,8 @@ final class WatchTask implements Runnable {
     private PrintStream out;
     private final DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
+    // --- Visible methods for main thread
+
     /**
      * Set up logging and initialize some state information.  This is
      * called from the main thread.
@@ -74,35 +76,7 @@ final class WatchTask implements Runnable {
         this.ticked.set(true);
     }
 
-    private void loop() {
-        try {
-            Thread.sleep(50L);
-        } catch (InterruptedException ie) {
-            ie.printStackTrace();
-        }
-        if (this.ticked.getAndSet(false)) {
-            // If we were ticked and the previous no-tick span was
-            // larger than the threshold, log the short report to
-            // console and the logs and reset it.
-            final int missed = this.missedTicks + 1;
-            if (missed >= this.reportingThreshold) {
-                this.plugin.getLogger().info(String.format("Reporting %d missed ticks", missed));
-                this.out.format("%s SPIKE missed %d ticks.\n", this.dateFormat.format(new Date()), missed);
-                this.shortReport.report(this.out);
-                this.out.println();
-            }
-            this.missedTicks = 0;
-            this.shortReport.reset();
-        } else {
-            // If we missed a tick, we add this info to the short and
-            // full report.
-            this.missedTicks += 1;
-            for (final StackTraceElement stackTraceElement: this.mainThread.getStackTrace()) {
-                this.fullReport.onMissedTick(stackTraceElement);
-                this.shortReport.onMissedTick(stackTraceElement);
-            }
-        }
-    }
+    // --- Task
 
     @Override
     public void run() {
@@ -115,5 +89,35 @@ final class WatchTask implements Runnable {
         this.fullReport.reset();
         this.out.close();
         this.plugin.getLogger().info("Watch task terminated");
+    }
+
+    private void loop() {
+        try {
+            Thread.sleep(50L);
+        } catch (InterruptedException ie) {
+            ie.printStackTrace();
+        }
+        if (this.ticked.getAndSet(false)) {
+            // If we were ticked and the previous no-tick span was
+            // larger than the threshold, log the short report to
+            // console and the log file and reset it.
+            final int missed = this.missedTicks + 1;
+            if (missed >= this.reportingThreshold) {
+                this.plugin.getLogger().info(String.format("Reporting %d missed ticks", missed));
+                this.out.format("%s SPIKE missed %d ticks.\n", this.dateFormat.format(new Date()), missed);
+                this.shortReport.report(this.out);
+                this.out.println();
+            }
+            this.missedTicks = 0;
+            this.shortReport.reset();
+        } else {
+            // If a tick was missed, add this info to the short and
+            // full report.
+            this.missedTicks += 1;
+            for (final StackTraceElement stackTraceElement: this.mainThread.getStackTrace()) {
+                this.fullReport.onMissedTick(stackTraceElement);
+                this.shortReport.onMissedTick(stackTraceElement);
+            }
+        }
     }
 }

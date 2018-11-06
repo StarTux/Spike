@@ -74,10 +74,6 @@ final class Report {
             this.fileName = stackTraceElement.getFileName();
         }
 
-        String keyOf(final StackTraceElement stackTraceElement) {
-            return String.format("%s.%s(%s)", stackTraceElement.getClassName(), stackTraceElement.getMethodName(), stackTraceElement.getFileName());
-        }
-
         String format() {
             StringBuilder sb = new StringBuilder(String.format("%03d %s ", this.count, this.className));
             sb.append("(");
