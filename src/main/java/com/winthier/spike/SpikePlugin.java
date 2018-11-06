@@ -30,6 +30,7 @@ public final class SpikePlugin extends JavaPlugin {
     private void importConfig() {
         reloadConfig();
         this.watchTask.setReportingThreshold(getConfig().getInt("ReportingThreshold"));
+        getLogger().info("ReportingThreshold: " + this.watchTask.getReportingThreshold());
     }
 
     // --- Command
@@ -60,9 +61,22 @@ public final class SpikePlugin extends JavaPlugin {
         case "generate": {
             if (args.length != 2) return false;
             int ticks = Integer.parseInt(args[1]);
-            sender.sendMessage("[Spike] Generating " + ticks + " missed ticks...");
+            sender.sendMessage("[Spike] Waiting " + ticks + " ticks...");
             Thread.sleep((long)ticks * 50);
-            sender.sendMessage("[Spike] Generated " + ticks + " missed ticks.");
+            sender.sendMessage("[Spike] Done");
+            return true;
+        }
+        case "report": {
+            if (args.length != 1) return false;
+            if (sender instanceof HumanEntity) {
+                sender.sendMessage("Full lag spike report:");
+                int lines = this.watchTask.getFullReport().report(sender);
+                sender.sendMessage("total " + lines);
+            } else {
+                getLogger().info("Full lag spike report:");
+                int lines = this.watchTask.getFullReport().report(getLogger());
+                getLogger().info("total " + lines);
+            }
             return true;
         }
         default: return false;

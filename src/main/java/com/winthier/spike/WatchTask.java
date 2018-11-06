@@ -9,6 +9,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.concurrent.atomic.AtomicBoolean;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
@@ -18,20 +19,17 @@ import lombok.Setter;
  */
 @RequiredArgsConstructor
 final class WatchTask implements Runnable {
-    // Const
-    private static final int MISSED_TICKS_THRESHOLD = 9;
-    private static final int TICKS_PER_LOOP = 3;
     // Required
     private final SpikePlugin plugin;
     // Config
-    @Setter private int reportingThreshold = 5;
+    @Getter @Setter private int reportingThreshold = 4;
     // Async
     private volatile AtomicBoolean ticked = new AtomicBoolean(true);
     private volatile boolean cancelled = false;
     Thread mainThread;
     // Stats
     private int missedTicks = 0;
-    private final Report fullReport = new Report();
+    @Getter private final Report fullReport = new Report();
     private final Report shortReport = new Report();
     // IO
     private PrintStream out;
@@ -100,8 +98,8 @@ final class WatchTask implements Runnable {
             // full report.
             this.missedTicks += 1;
             for (final StackTraceElement stackTraceElement: this.mainThread.getStackTrace()) {
-                this.fullReport.report(stackTraceElement);
-                this.shortReport.report(stackTraceElement);
+                this.fullReport.onMissedTick(stackTraceElement);
+                this.shortReport.onMissedTick(stackTraceElement);
             }
         }
     }
