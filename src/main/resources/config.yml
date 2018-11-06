@@ -1,0 +1,2 @@
+# Minimum missed ticks to trigger a report to console and logs.
+ReportingThreshold: 5
