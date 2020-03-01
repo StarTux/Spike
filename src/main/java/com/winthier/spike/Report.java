@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.logging.Logger;
 import lombok.Data;
+import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 
 final class Report {
@@ -79,7 +80,15 @@ final class Report {
         }
 
         String format() {
-            StringBuilder sb = new StringBuilder(String.format("%03d %s ", count, className));
+            String display = className
+                .replace("java.lang.", "")
+                .replace("java.util.", "")
+                .replace("net.minecraft.server", "nms")
+                .replace("org.bukkit.craftbukkit", "obc")
+                .replace("org.bukkit", "bukkit")
+                .replace("." + Bukkit.getServer().getClass().getName().split("\\.")[3], "")
+                .replace("com.destroystokyo.paper", "paper");
+            StringBuilder sb = new StringBuilder(String.format("%03d %s ", count, display));
             sb.append("(");
             if (!methodNames.isEmpty()) {
                 ArrayList<String> names = new ArrayList<>(methodNames);
