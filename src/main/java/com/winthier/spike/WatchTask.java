@@ -109,7 +109,7 @@ final class WatchTask implements Runnable {
                 plugin.getLogger().info(msg);
                 for (Player player : plugin.getServer().getOnlinePlayers()) {
                     if (!player.hasPermission("spike.notify")) continue;
-                    player.sendMessage(ChatColor.GOLD + "[Spike] " + msg);
+                    player.sendMessage(ChatColor.YELLOW + "[Spike] " + msg);
                 }
                 out.format("%s SPIKE missed %d ticks.\n", dateFormat.format(new Date()), missed);
                 currentReport.report(out);

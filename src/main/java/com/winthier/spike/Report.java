@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.logging.Logger;
 import lombok.Data;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 
 final class Report {
@@ -23,10 +24,6 @@ final class Report {
             if (entry == null) {
                 entry = new Entry(stackTraceElement);
                 entries.put(key, entry);
-            }
-            entry.methodNames.add(stackTraceElement.getMethodName());
-            if (stackTraceElement.getLineNumber() >= 0) {
-                entry.lineNumbers.add(stackTraceElement.getLineNumber());
             }
             if (!doneKeys.contains(key)) {
                 entry.count += 1;
@@ -47,21 +44,21 @@ final class Report {
 
     int report(final PrintStream printStream) {
         for (Entry entry: createReport()) {
-            printStream.println(entry.format());
+            printStream.println(entry.format(false));
         }
         return entries.size();
     }
 
     int report(final Logger logger) {
         for (Entry entry: createReport()) {
-            logger.info(entry.format());
+            logger.info(entry.format(true));
         }
         return entries.size();
     }
 
     int report(final CommandSender sender) {
         for (Entry entry: createReport()) {
-            sender.sendMessage(entry.format());
+            sender.sendMessage(entry.format(true));
         }
         return entries.size();
     }
@@ -77,9 +74,13 @@ final class Report {
         Entry(final StackTraceElement stackTraceElement) {
             className = stackTraceElement.getClassName();
             fileName = stackTraceElement.getFileName();
+            methodNames.add(stackTraceElement.getMethodName());
+            if (stackTraceElement.getLineNumber() >= 0) {
+                lineNumbers.add(stackTraceElement.getLineNumber());
+            }
         }
 
-        String format() {
+        String format(boolean color) {
             String display = className
                 .replace("java.lang.", "")
                 .replace("java.util.", "")
@@ -88,21 +89,40 @@ final class Report {
                 .replace("org.bukkit", "bukkit")
                 .replace("." + Bukkit.getServer().getClass().getName().split("\\.")[3], "")
                 .replace("com.destroystokyo.paper", "paper");
-            StringBuilder sb = new StringBuilder(String.format("%03d %s ", count, display));
-            sb.append("(");
+            StringBuilder sb = new StringBuilder("");
+            if (color) sb.append(ChatColor.YELLOW);
+            sb.append(count);
+            if (color) sb.append(ChatColor.GOLD);
+            sb.append(" ").append(display);
+            if (color) sb.append(ChatColor.DARK_GRAY);
+            sb.append(" (");
             if (!methodNames.isEmpty()) {
                 ArrayList<String> names = new ArrayList<>(methodNames);
                 Collections.sort(names);
+                if (color) sb.append(ChatColor.GRAY);
                 sb.append(names.get(0));
-                for (int i = 1; i < names.size(); i += 1) sb.append(", ").append(names.get(i));
+                for (int i = 1; i < names.size(); i += 1) {
+                    if (color) sb.append(ChatColor.DARK_GRAY);
+                    sb.append(", ");
+                    if (color) sb.append(ChatColor.GRAY);
+                    sb.append(names.get(i));
+                }
             }
+            if (color) sb.append(ChatColor.DARK_GRAY);
             sb.append(") [");
             if (!lineNumbers.isEmpty()) {
                 ArrayList<Integer> lines = new ArrayList<>(lineNumbers);
                 Collections.sort(lines);
+                if (color) sb.append(ChatColor.GRAY);
                 sb.append(lines.get(0));
-                for (int i = 1; i < lines.size(); i += 1) sb.append(", ").append(lines.get(i));
+                for (int i = 1; i < lines.size(); i += 1) {
+                    if (color) sb.append(ChatColor.DARK_GRAY);
+                    sb.append(", ");
+                    if (color) sb.append(ChatColor.GRAY);
+                    sb.append(lines.get(i));
+                }
             }
+            if (color) sb.append(ChatColor.DARK_GRAY);
             sb.append("]");
             return sb.toString();
         }
