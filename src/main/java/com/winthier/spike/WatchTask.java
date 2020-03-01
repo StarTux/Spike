@@ -30,7 +30,8 @@ final class WatchTask implements Runnable {
     // Stats
     int missedTicks = 0;
     final Report fullReport = new Report();
-    final Report shortReport = new Report();
+    Report lastReport = new Report();
+    Report currentReport = new Report();
     // IO
     private PrintStream out;
     final DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -111,18 +112,21 @@ final class WatchTask implements Runnable {
                     player.sendMessage(ChatColor.GOLD + "[Spike] " + msg);
                 }
                 out.format("%s SPIKE missed %d ticks.\n", dateFormat.format(new Date()), missed);
-                shortReport.report(out);
+                currentReport.report(out);
                 out.println();
+                lastReport = currentReport;
+                currentReport = new Report();
+            } else {
+                currentReport.reset();
             }
             missedTicks = 0;
-            shortReport.reset();
         } else {
             // If a tick was missed, add this info to the short and
             // full report.
             missedTicks += 1;
             final StackTraceElement[] trace = mainThread.getStackTrace();
             fullReport.onMissedTick(trace);
-            shortReport.onMissedTick(trace);
+            currentReport.onMissedTick(trace);
         }
     }
 }

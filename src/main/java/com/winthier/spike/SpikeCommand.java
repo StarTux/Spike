@@ -96,7 +96,7 @@ final class SpikeCommand implements TabExecutor {
         case "last": {
             if (args.length != 1) return false;
             sender.sendMessage("Last lag spike report:");
-            int lines = plugin.watchTask.shortReport.report(sender);
+            int lines = plugin.watchTask.lastReport.report(sender);
             sender.sendMessage("total " + lines);
             return true;
         }
