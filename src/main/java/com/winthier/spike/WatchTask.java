@@ -9,9 +9,9 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.concurrent.atomic.AtomicBoolean;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.Setter;
+import org.bukkit.ChatColor;
+import org.bukkit.entity.Player;
 
 /**
  * A single instance of this class will run in an async task and take
@@ -20,20 +20,20 @@ import lombok.Setter;
 @RequiredArgsConstructor
 final class WatchTask implements Runnable {
     // Required
-    private final SpikePlugin plugin;
+    final SpikePlugin plugin;
     // Config
-    @Getter @Setter private int reportingThreshold = 4;
+    int reportingThreshold = 4;
     // Async
     private volatile AtomicBoolean ticked = new AtomicBoolean(true);
     private volatile boolean cancelled = false;
-    Thread mainThread;
+    private Thread mainThread;
     // Stats
-    private int missedTicks = 0;
-    @Getter private final Report fullReport = new Report();
-    private final Report shortReport = new Report();
+    int missedTicks = 0;
+    final Report fullReport = new Report();
+    final Report shortReport = new Report();
     // IO
     private PrintStream out;
-    private final DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    final DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     // --- Visible methods for main thread
 
@@ -42,19 +42,20 @@ final class WatchTask implements Runnable {
      * called from the main thread.
      */
     void enable() {
-        this.mainThread = Thread.currentThread();
-        this.missedTicks = 0;
+        mainThread = Thread.currentThread();
+        missedTicks = 0;
         try {
-            final File dataFolder = this.plugin.getDataFolder();
+            final File dataFolder = plugin.getDataFolder();
             dataFolder.mkdirs();
-            String filename = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss").format(new Date()) + ".log";
+            String filename = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss")
+                .format(new Date()) + ".log";
             final File file = new File(dataFolder, filename);
-            this.plugin.getLogger().info("Using log file " + file.getPath());
+            plugin.getLogger().info("Using log file " + file.getPath());
             // Create PrintStream
-            this.out = new PrintStream(file);
-            this.out.println(new Date().toString());
-            this.out.println();
-            this.out.flush();
+            out = new PrintStream(file);
+            out.println(new Date().toString());
+            out.println();
+            out.flush();
             // Create symlink
             final File link = new File(dataFolder, "latest.log");
             if (link.exists()) link.delete();
@@ -65,30 +66,30 @@ final class WatchTask implements Runnable {
     }
 
     void stop() {
-        this.cancelled = true;
-        this.ticked.set(true);
+        cancelled = true;
+        ticked.set(true);
     }
 
     /**
      * Called by a plugin task once every (main thread) tick.
      */
     void tick() {
-        this.ticked.set(true);
+        ticked.set(true);
     }
 
     // --- Task
 
     @Override
     public void run() {
-        this.plugin.getLogger().info("Watch task started");
-        while (!this.cancelled) {
-            this.loop();
+        plugin.getLogger().info("Watch task started");
+        while (!cancelled) {
+            loop();
         }
-        this.out.println("Final report:");
-        this.fullReport.report(this.out);
-        this.fullReport.reset();
-        this.out.close();
-        this.plugin.getLogger().info("Watch task terminated");
+        out.println("Final report:");
+        fullReport.report(out);
+        fullReport.reset();
+        out.close();
+        plugin.getLogger().info("Watch task terminated");
     }
 
     private void loop() {
@@ -97,26 +98,31 @@ final class WatchTask implements Runnable {
         } catch (InterruptedException ie) {
             ie.printStackTrace();
         }
-        if (this.ticked.getAndSet(false)) {
+        if (ticked.getAndSet(false)) {
             // If we were ticked and the previous no-tick span was
             // larger than the threshold, log the short report to
             // console and the log file and reset it.
-            final int missed = this.missedTicks + 1;
-            if (missed >= this.reportingThreshold) {
-                this.plugin.getLogger().info(String.format("Reporting %d missed ticks", missed));
-                this.out.format("%s SPIKE missed %d ticks.\n", this.dateFormat.format(new Date()), missed);
-                this.shortReport.report(this.out);
-                this.out.println();
+            final int missed = missedTicks + 1;
+            if (missed >= reportingThreshold) {
+                String msg = String.format("Reporting %d missed ticks", missed);
+                plugin.getLogger().info(msg);
+                for (Player player : plugin.getServer().getOnlinePlayers()) {
+                    if (!player.hasPermission("spike.notify")) continue;
+                    player.sendMessage(ChatColor.GOLD + "[Spike] " + msg);
+                }
+                out.format("%s SPIKE missed %d ticks.\n", dateFormat.format(new Date()), missed);
+                shortReport.report(out);
+                out.println();
             }
-            this.missedTicks = 0;
-            this.shortReport.reset();
+            missedTicks = 0;
+            shortReport.reset();
         } else {
             // If a tick was missed, add this info to the short and
             // full report.
-            this.missedTicks += 1;
-            final StackTraceElement[] trace = this.mainThread.getStackTrace();
-            this.fullReport.onMissedTick(trace);
-            this.shortReport.onMissedTick(trace);
+            missedTicks += 1;
+            final StackTraceElement[] trace = mainThread.getStackTrace();
+            fullReport.onMissedTick(trace);
+            shortReport.onMissedTick(trace);
         }
     }
 }
