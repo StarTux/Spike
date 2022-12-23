@@ -6,7 +6,9 @@ import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.DateFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
 import java.util.Date;
 import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +40,8 @@ final class WatchTask implements Runnable {
 
     // --- Visible methods for main thread
 
+    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
+
     /**
      * Set up logging and initialize some state information.  This is
      * called from the main thread.
@@ -45,11 +49,29 @@ final class WatchTask implements Runnable {
     void enable() {
         mainThread = Thread.currentThread();
         missedTicks = 0;
+        long tooOld = Duration.ofDays(7).toMillis();
         try {
             final File dataFolder = plugin.getDataFolder();
             dataFolder.mkdirs();
-            String filename = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss")
-                .format(new Date()) + ".log";
+            for (File file : dataFolder.listFiles()) {
+                if (!file.isFile()) continue;
+                String name = file.getName();
+                if (!name.endsWith(".log")) continue;
+                name = name.substring(0, name.length() - 4);
+                if (name.equals("latest")) continue;
+                final Date date;
+                try {
+                    date = DATE_FORMAT.parse(name);
+                } catch (ParseException pe) {
+                    pe.printStackTrace();
+                    continue;
+                }
+                if (System.currentTimeMillis() - date.getTime() > tooOld) {
+                    plugin.getLogger().info("Deleting old file: " + file);
+                    file.delete();
+                }
+            }
+            String filename = DATE_FORMAT.format(new Date()) + ".log";
             final File file = new File(dataFolder, filename);
             plugin.getLogger().info("Using log file " + file.getPath());
             // Create PrintStream
