@@ -82,6 +82,8 @@ final class WatchTask implements Runnable {
             // Create symlink
             final File link = new File(dataFolder, "latest.log");
             if (link.exists()) link.delete();
+            // Apparently File::exists yields false for broken symlink
+            if (Files.isSymbolicLink(link.toPath())) link.delete();
             Files.createSymbolicLink(link.toPath(), Paths.get(filename));
         } catch (IOException ex) {
             ex.printStackTrace();
