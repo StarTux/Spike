@@ -5,10 +5,12 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
-import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
+import static net.kyori.adventure.text.Component.text;
+import static net.kyori.adventure.text.format.NamedTextColor.RED;
+import static net.kyori.adventure.text.format.NamedTextColor.YELLOW;
 
 @RequiredArgsConstructor
 final class SpikeCommand implements TabExecutor {
@@ -21,7 +23,7 @@ final class SpikeCommand implements TabExecutor {
         try {
             return onCommand(sender, args);
         } catch (Exception e) {
-            sender.sendMessage(ChatColor.RED + e.getMessage());
+            sender.sendMessage(text(e.getMessage(), RED));
             return true;
         }
     }
@@ -66,16 +68,16 @@ final class SpikeCommand implements TabExecutor {
         case "reload": {
             if (args.length != 1) return false;
             plugin.importConfig();
-            sender.sendMessage("[Spike] Configuration reloaded.");
+            sender.sendMessage(text("[Spike] Configuration reloaded", YELLOW));
             return true;
         }
         case "generate": {
             if (args.length != 2) return false;
             int ticks = Integer.parseInt(args[1]);
             if (ticks <= 0) throw new RuntimeException("Invalid ticks: " + ticks);
-            sender.sendMessage("[Spike] Waiting " + ticks + " ticks...");
+            sender.sendMessage(text("[Spike] Waiting " + ticks + " ticks...", YELLOW));
             Thread.sleep((long) ticks * 50);
-            sender.sendMessage("[Spike] Done");
+            sender.sendMessage(text("[Spike] Done", YELLOW));
             return true;
         }
         case "threshold": {
@@ -83,21 +85,21 @@ final class SpikeCommand implements TabExecutor {
             int ticks = Integer.parseInt(args[1]);
             if (ticks <= 0) throw new RuntimeException("Invalid ticks: " + ticks);
             plugin.watchTask.reportingThreshold = ticks;
-            sender.sendMessage("[Spike] Reporting threshold is now " + ticks + " ticks.");
+            sender.sendMessage(text("[Spike] Reporting threshold is now " + ticks + " ticks", YELLOW));
             return true;
         }
         case "report": {
             if (args.length != 1) return false;
-            sender.sendMessage("Full lag spike report:");
+            sender.sendMessage(text("Full lag spike report:", YELLOW));
             int lines = plugin.watchTask.fullReport.report(sender);
-            sender.sendMessage("total " + lines);
+            sender.sendMessage(text("total " + lines, YELLOW));
             return true;
         }
         case "last": {
             if (args.length != 1) return false;
-            sender.sendMessage("Last lag spike report:");
+            sender.sendMessage(text("Last lag spike report:", YELLOW));
             int lines = plugin.watchTask.lastReport.report(sender);
-            sender.sendMessage("total " + lines);
+            sender.sendMessage(text("total " + lines, YELLOW));
             return true;
         }
         default: return false;

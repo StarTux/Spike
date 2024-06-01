@@ -8,14 +8,19 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.logging.Logger;
 import lombok.Data;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
+import static net.kyori.adventure.text.Component.join;
+import static net.kyori.adventure.text.Component.text;
+import static net.kyori.adventure.text.JoinConfiguration.noSeparators;
+import static net.kyori.adventure.text.format.NamedTextColor.*;
+import static net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText;
 
 final class Report {
-    HashMap<String, Entry> entries = new HashMap<>();
+    private final HashMap<String, Entry> entries = new HashMap<>();
 
-    void onMissedTick(final StackTraceElement[] trace) {
+    public void onMissedTick(final StackTraceElement[] trace) {
         HashSet<String> doneKeys = new HashSet<>();
         for (StackTraceElement stackTraceElement: trace) {
             if (stackTraceElement.isNativeMethod()) continue;
@@ -32,7 +37,7 @@ final class Report {
         }
     }
 
-    void reset() {
+    public void reset() {
         entries.clear();
     }
 
@@ -42,29 +47,29 @@ final class Report {
         return result;
     }
 
-    int report(final PrintStream printStream) {
+    public int report(final PrintStream printStream) {
         for (Entry entry: createReport()) {
-            printStream.println(entry.format(false));
+            printStream.println(plainText().serialize(entry.format()));
         }
         return entries.size();
     }
 
-    int report(final Logger logger) {
+    public int report(final Logger logger) {
         for (Entry entry: createReport()) {
-            logger.info(entry.format(true));
+            logger.info(plainText().serialize(entry.format()));
         }
         return entries.size();
     }
 
-    int report(final CommandSender sender) {
+    public int report(final CommandSender sender) {
         for (Entry entry: createReport()) {
-            sender.sendMessage(entry.format(true));
+            sender.sendMessage(entry.format());
         }
         return entries.size();
     }
 
     @Data
-    static final class Entry {
+    public static final class Entry {
         private final String className;
         private final String fileName;
         private int count = 0;
@@ -80,8 +85,9 @@ final class Report {
             }
         }
 
-        String format(boolean color) {
-            String display = className
+        public Component format() {
+            final List<Component> line = new ArrayList<>();
+            final String display = className
                 .replace("java.lang.", "")
                 .replace("java.util.", "")
                 .replace("net.minecraft.server", "nms")
@@ -89,42 +95,30 @@ final class Report {
                 .replace("org.bukkit", "bukkit")
                 .replace("." + Bukkit.getServer().getClass().getName().split("\\.")[3], "")
                 .replace("com.destroystokyo.paper", "paper");
-            StringBuilder sb = new StringBuilder("");
-            if (color) sb.append(ChatColor.YELLOW);
-            sb.append(count);
-            if (color) sb.append(ChatColor.GOLD);
-            sb.append(" ").append(display);
-            if (color) sb.append(ChatColor.DARK_GRAY);
-            sb.append(" (");
+            line.add(text(count, YELLOW));
+            line.add(text(" " + display, GOLD));
+            line.add(text(" (", DARK_GRAY));
             if (!methodNames.isEmpty()) {
                 ArrayList<String> names = new ArrayList<>(methodNames);
                 Collections.sort(names);
-                if (color) sb.append(ChatColor.GRAY);
-                sb.append(names.get(0));
+                line.add(text(names.get(0), GRAY));
                 for (int i = 1; i < names.size(); i += 1) {
-                    if (color) sb.append(ChatColor.DARK_GRAY);
-                    sb.append(", ");
-                    if (color) sb.append(ChatColor.GRAY);
-                    sb.append(names.get(i));
+                    line.add(text(", ", DARK_GRAY));
+                    line.add(text(names.get(i), GRAY));
                 }
             }
-            if (color) sb.append(ChatColor.DARK_GRAY);
-            sb.append(") [");
+            line.add(text(") [", DARK_GRAY));
             if (!lineNumbers.isEmpty()) {
                 ArrayList<Integer> lines = new ArrayList<>(lineNumbers);
                 Collections.sort(lines);
-                if (color) sb.append(ChatColor.GRAY);
-                sb.append(lines.get(0));
+                line.add(text(lines.get(0), GRAY));
                 for (int i = 1; i < lines.size(); i += 1) {
-                    if (color) sb.append(ChatColor.DARK_GRAY);
-                    sb.append(", ");
-                    if (color) sb.append(ChatColor.GRAY);
-                    sb.append(lines.get(i));
+                    line.add(text(", ", DARK_GRAY));
+                    line.add(text(lines.get(i), GRAY));
                 }
             }
-            if (color) sb.append(ChatColor.DARK_GRAY);
-            sb.append("]");
-            return sb.toString();
+            line.add(text("]", DARK_GRAY));
+            return join(noSeparators(), line);
         }
     }
 }

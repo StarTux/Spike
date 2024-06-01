@@ -12,8 +12,9 @@ import java.time.Duration;
 import java.util.Date;
 import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.RequiredArgsConstructor;
-import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
+import static net.kyori.adventure.text.Component.text;
+import static net.kyori.adventure.text.format.NamedTextColor.YELLOW;
 
 /**
  * A single instance of this class will run in an async task and take
@@ -133,7 +134,7 @@ final class WatchTask implements Runnable {
                 plugin.getLogger().info(msg);
                 for (Player player : plugin.getServer().getOnlinePlayers()) {
                     if (!player.hasPermission("spike.notify")) continue;
-                    player.sendMessage(ChatColor.YELLOW + "[Spike] " + msg);
+                    player.sendMessage(text("[Spike] " + msg, YELLOW));
                 }
                 out.format("%s SPIKE missed %d ticks.\n", dateFormat.format(new Date()), missed);
                 currentReport.report(out);
