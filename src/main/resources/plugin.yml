@@ -3,7 +3,7 @@ name: Spike
 description: Detect lag spikes and their causes
 author: StarTux
 version: 0.1
-api-version: '26.1.2'
+api-version: '26.3'
 website: https://github.com/StarTux/Spike
 depend: []
 commands:
